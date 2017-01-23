@@ -1,6 +1,7 @@
 package duckduckgo
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +11,8 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"regexp"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
 type Session struct {
@@ -39,73 +42,31 @@ func (sess *Session) Init() error {
 }
 
 func (sess *Session) Web(query string, offset int) ([]WebResult, error) {
-	var vqd string
-	{
-		u := url.URL{
-			Scheme: "https",
-			Host:   "duckduckgo.com",
-			Path:   "/",
-			RawQuery: url.Values{
-				"q":  []string{query},
-				"ia": []string{"web"},
-				"t":  []string{"h_"},
-			}.Encode(),
-		}
-		r, err := sess.request("GET", u.String(), nil)
-		if err != nil {
-			return nil, err
-		}
-		source, err := ioutil.ReadAll(r.Body)
-		r.Body.Close()
-		if err != nil {
-			return nil, err
-		}
-		m := reVqd.FindStringSubmatch(string(source))
-		if m == nil {
-			return nil, errors.New("invalid response")
-		}
-		vqd = m[1]
+	fd := url.Values{
+		"q":  []string{"water"},
+		"b":  []string{},
+		"kl": []string{"us-en"},
+	}.Encode()
+	req, err := sess.newRequest("POST", "https://duckduckgo.com/html/",
+		bytes.NewBufferString(fd))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("content-type", "application/x-www-form-urlencoded")
+	res, err := sess.cli.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	doc, err := goquery.NewDocumentFromResponse(res)
+	if err != nil {
+		return nil, err
 	}
 	results := make([]WebResult, 0, 16)
-	{
-		u := url.URL{
-			Scheme: "https",
-			Host:   "duckduckgo.com",
-			Path:   "/d.js",
-			RawQuery: url.Values{
-				"q":      []string{query},
-				"t":      []string{"D"},
-				"l":      []string{"us-en"},
-				"s":      []string{fmt.Sprint(offset)},
-				"a":      []string{"hs"},
-				"dl":     []string{"en"},
-				"ct":     []string{"DE"},
-				"ss_mkt": []string{"us"},
-				"vqd":    []string{vqd},
-				"p":      []string{"1"},
-				"sp":     []string{"0"},
-				"yhs":    []string{"1"},
-			}.Encode(),
+	doc.Find(".result__a").Each(func(i int, s *goquery.Selection) {
+		if a, ok := s.Attr("href"); ok {
+			results = append(results, WebResult{Url: a})
 		}
-		fmt.Println(u.String())
-		r, err := sess.request("GET", u.String(), nil)
-		if err != nil {
-			return nil, err
-		}
-		source, err := ioutil.ReadAll(r.Body)
-		r.Body.Close()
-		if err != nil {
-			return nil, err
-		}
-		fmt.Println(string(source))
-		m := reWeb.FindAllStringSubmatch(string(source), -1)
-		if m == nil {
-			return nil, errors.New("invalid response")
-		}
-		for _, el := range m {
-			results = append(results, WebResult{Url: el[1]})
-		}
-	}
+	})
 	return results, nil
 }
 
@@ -123,12 +84,12 @@ func (sess *Session) Images(query string, offset int) ([]ImageResult, error) {
 				"t":   []string{"h_"},
 			}.Encode(),
 		}
-		r, err := sess.request("GET", u.String(), nil)
+		res, err := sess.request("GET", u.String(), nil)
 		if err != nil {
 			return nil, err
 		}
-		source, err := ioutil.ReadAll(r.Body)
-		r.Body.Close()
+		source, err := ioutil.ReadAll(res.Body)
+		res.Body.Close()
 		if err != nil {
 			return nil, err
 		}
@@ -157,15 +118,15 @@ func (sess *Session) Images(query string, offset int) ([]ImageResult, error) {
 				"s":   []string{fmt.Sprint(offset)},
 			}.Encode(),
 		}
-		r, err := sess.request("GET", u.String(), nil)
+		res, err := sess.request("GET", u.String(), nil)
 		if err != nil {
 			return nil, err
 		}
-		if err := json.NewDecoder(r.Body).Decode(&results); err != nil {
-			r.Body.Close()
+		if err := json.NewDecoder(res.Body).Decode(&results); err != nil {
+			res.Body.Close()
 			return nil, err
 		}
-		r.Body.Close()
+		res.Body.Close()
 	}
 	if len(results.Results) == 0 {
 		return []ImageResult{}, nil
@@ -178,11 +139,19 @@ func (sess *Session) Images(query string, offset int) ([]ImageResult, error) {
 }
 
 func (sess *Session) request(method, url string, body io.Reader) (*http.Response, error) {
+	req, err := sess.newRequest(method, url, body)
+	if err != nil {
+		return nil, err
+	}
+	return sess.cli.Do(req)
+}
+
+func (sess *Session) newRequest(method, url string, body io.Reader) (*http.Request, error) {
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent",
+	req.Header.Set("user-agent",
 		"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.94 Safari/537.36")
-	return sess.cli.Do(req)
+	return req, nil
 }

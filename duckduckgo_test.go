@@ -10,20 +10,19 @@ func TestWeb(t *testing.T) {
 	if err := sess.Init(); err != nil {
 		t.Fatal(err)
 	}
-	imgs, err := sess.Web("cat", 0)
+	webs, err := sess.Web("cat", 0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(imgs) == 0 {
+	if len(webs) == 0 {
 		t.Logf("nothing found")
 	}
-	for _, img := range imgs {
-		fmt.Println(img.Url)
+	for _, web := range webs {
+		fmt.Println(web.Url)
 	}
 }
 
 func TestImage(t *testing.T) {
-	return
 	var sess Session
 	if err := sess.Init(); err != nil {
 		t.Fatal(err)
