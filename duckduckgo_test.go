@@ -10,6 +10,9 @@ func TestWeb(t *testing.T) {
 	if err := sess.Init(); err != nil {
 		t.Fatal(err)
 	}
+	if !sess.IsInitialized() {
+		t.Fail()
+	}
 	webs, err := sess.Web("cat", 0)
 	if err != nil {
 		t.Fatal(err)

@@ -41,6 +41,10 @@ func (sess *Session) Init() error {
 	return nil
 }
 
+func (sess *Session) IsInitialized() bool {
+	return sess.cli.Jar != nil
+}
+
 func (sess *Session) Web(query string, offset int) ([]WebResult, error) {
 	fd := url.Values{
 		"q":  []string{"water"},
