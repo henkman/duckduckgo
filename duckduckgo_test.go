@@ -38,3 +38,17 @@ func TestImage(t *testing.T) {
 		fmt.Println(img.Url)
 	}
 }
+
+func TestVideo(t *testing.T) {
+	var sess Session
+	if err := sess.Init(); err != nil {
+		t.Fatal(err)
+	}
+	vids, err := sess.Videos("cat", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, vid := range vids {
+		fmt.Println("https://www.youtube.com/watch?v=" + vid.Id)
+	}
+}
