@@ -51,7 +51,7 @@ func (sess *Session) IsInitialized() bool {
 
 func (sess *Session) Web(query string, offset uint) ([]WebResult, error) {
 	fd := url.Values{
-		"q":  []string{"water"},
+		"q":  []string{query},
 		"b":  []string{},
 		"kl": []string{"us-en"},
 	}.Encode()
