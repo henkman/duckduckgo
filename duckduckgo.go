@@ -31,10 +31,7 @@ type VideoResult struct {
 	Id string
 }
 
-var (
-	reWeb = regexp.MustCompile("\"u\":\"([^\"]+)\"")
-	reVqd = regexp.MustCompile("vqd='([^']+)'")
-)
+var reVqd = regexp.MustCompile("vqd='([^']+)'")
 
 func (sess *Session) Init() error {
 	jar, err := cookiejar.New(nil)
