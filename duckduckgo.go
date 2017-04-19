@@ -75,7 +75,7 @@ func (sess *Session) Web(query string, offset uint) ([]WebResult, error) {
 	return results, nil
 }
 
-func (sess *Session) Images(query string, offset uint) ([]ImageResult, error) {
+func (sess *Session) Images(query string, safe bool, offset uint) ([]ImageResult, error) {
 	var vqd string
 	{
 		u := url.URL{
@@ -110,18 +110,22 @@ func (sess *Session) Images(query string, offset uint) ([]ImageResult, error) {
 		} `json:"results"`
 	}
 	{
+		params := url.Values{
+			"l":   []string{"us-en"},
+			"o":   []string{"json"},
+			"q":   []string{query},
+			"vqd": []string{vqd},
+			"f":   []string{},
+			"s":   []string{fmt.Sprint(offset)},
+		}
+		if !safe {
+			params.Set("p", "-1")
+		}
 		u := url.URL{
-			Scheme: "https",
-			Host:   "duckduckgo.com",
-			Path:   "/i.js",
-			RawQuery: url.Values{
-				"l":   []string{"us-en"},
-				"o":   []string{"json"},
-				"q":   []string{query},
-				"vqd": []string{vqd},
-				"f":   []string{},
-				"s":   []string{fmt.Sprint(offset)},
-			}.Encode(),
+			Scheme:   "https",
+			Host:     "duckduckgo.com",
+			Path:     "/i.js",
+			RawQuery: params.Encode(),
 		}
 		res, err := sess.request("GET", u.String(), nil)
 		if err != nil {
