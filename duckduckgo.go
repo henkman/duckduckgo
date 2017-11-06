@@ -31,6 +31,16 @@ type VideoResult struct {
 	Id string
 }
 
+type ImageType string
+
+const (
+	ImageType_Any         ImageType = ""
+	ImageType_Animated    ImageType = "type:photo-animatedgif"
+	ImageType_Photo       ImageType = "type:photo-photo"
+	ImageType_Clipart     ImageType = "type:photo-clipart"
+	ImageType_Transparent ImageType = "type:photo-transparent"
+)
+
 var reVqd = regexp.MustCompile("vqd='([^']+)'")
 
 func (sess *Session) Init() error {
@@ -75,19 +85,23 @@ func (sess *Session) Web(query string, offset uint) ([]WebResult, error) {
 	return results, nil
 }
 
-func (sess *Session) Images(query string, safe bool, offset uint) ([]ImageResult, error) {
+func (sess *Session) Images(query string, safe bool,
+	typ ImageType, offset uint) ([]ImageResult, error) {
 	var vqd string
 	{
+		params := url.Values{
+			"q":   []string{query},
+			"iax": []string{"images"},
+			"ia":  []string{"images"},
+		}
+		if typ != ImageType_Any {
+			params.Set("iaf", string(typ))
+		}
 		u := url.URL{
-			Scheme: "https",
-			Host:   "duckduckgo.com",
-			Path:   "/",
-			RawQuery: url.Values{
-				"q":   []string{query},
-				"iax": []string{"1"},
-				"ia":  []string{"images"},
-				"t":   []string{"h_"},
-			}.Encode(),
+			Scheme:   "https",
+			Host:     "duckduckgo.com",
+			Path:     "/",
+			RawQuery: params.Encode(),
 		}
 		res, err := sess.request("GET", u.String(), nil)
 		if err != nil {
@@ -117,6 +131,9 @@ func (sess *Session) Images(query string, safe bool, offset uint) ([]ImageResult
 			"vqd": []string{vqd},
 			"f":   []string{},
 			"s":   []string{fmt.Sprint(offset)},
+		}
+		if typ != ImageType_Any {
+			params.Set("f", ","+string(typ)+",,")
 		}
 		if !safe {
 			params.Set("p", "-1")

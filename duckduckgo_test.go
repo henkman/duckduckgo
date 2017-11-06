@@ -30,7 +30,7 @@ func TestImage(t *testing.T) {
 	if err := sess.Init(); err != nil {
 		t.Fatal(err)
 	}
-	imgs, err := sess.Images("cat", true, 50)
+	imgs, err := sess.Images("cat", true, ImageType_Animated, 50)
 	if err != nil {
 		t.Fatal(err)
 	}
