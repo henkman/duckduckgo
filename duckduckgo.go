@@ -11,6 +11,7 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"regexp"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
 )
